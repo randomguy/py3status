@@ -47,11 +47,15 @@ class StoppableTimer(Timer):
         self._target_time = time() + interval
 
     @property
-    def target_time(self):
-        return self._target_time
+    def time_left(self):
+        if self.is_active:
+            return self._target_time - time()
+        else:
+            return None
 
+    @property
     def is_active(self):
-        return self.target_time > time()
+        return self._target_time > time()
 
 
 class State:
@@ -86,14 +90,19 @@ class TimerState(State):
     def timers(self, new_timers):
         self._timers = new_timers
 
+    @property
+    def future_timers(self):
+        for timer in self.timers:
+            if timer.is_active:
+                yield timer
+
     def enter(self, duration):
-        active_timers = [t for t in self.timers if t.is_active()]
-        if not self.timers or not any(active_timers):
+        if not self.timers or not any(self.future_timers):
             self.timers = self._module._init_timers(duration)
             self._module.full_text = FULL_BAR
         else:
             self._module.full_text = self._old_text
-            for timer in active_timers:
+            for timer in self.future_timers:
                 timer.start()
         self._module.py3.update()
 
@@ -112,14 +121,12 @@ class StateWorking(TimerState):
 
     def exit(self):
         self._old_text = self._module.full_text
-        new_timers = []
-        for timer in self.timers:
+        stopped_timers = []
+        for timer in self.future_timers:
             timer.cancel()
-            new = StoppableTimer(timer.target_time - time(),
-                                 timer.function,
-                                 timer.args)
-            new_timers.append(new)
-        self.timers = new_timers
+            new = StoppableTimer(timer.time_left, timer.function, timer.args)
+            stopped_timers.append(new)
+        self.timers = stopped_timers
 
 
 class StateWaitForStart(State):
