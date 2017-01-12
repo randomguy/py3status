@@ -31,8 +31,8 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 CACHE_FOREVER = -1
-POMODORO_DURATION_SEC = 5 * 3
-BREAK_DURATION_SEC = 5
+POMODORO_DURATION_SEC = 25 * 60
+BREAK_DURATION_SEC = 5 * 60
 FULL_BAR = "<span font='Material Design Icons 12'>■■■■■</span>"
 
 logging.basicConfig(filename='example.log',
@@ -106,7 +106,6 @@ class TimerState(State):
 class StatePauseWorking(State):
     def enter(self):
         self._module.full_text = "<span font='Material Design Icons 12'></span> paused"
-        self._module.update_bar()
 
 
 class StateWorking(TimerState):
@@ -126,7 +125,6 @@ class StateWorking(TimerState):
 class StateWaitForStart(State):
     def enter(self):
         self._module.full_text = "start <span font='Material Design Icons 12'></span>"
-        self._module.update_bar()
 
 
 class StateWaitForBreak(State):
@@ -187,7 +185,6 @@ class Py3status:
         self.py3.update()
 
     def _enter_next_state_on_click(self):
-        logging.debug('key on onclick transition:\n%s', self._state)
         self._state.exit()
         try:
             self._state = self._on_click_transitions[self._state]
@@ -196,7 +193,7 @@ class Py3status:
             pass
         else:
             self._state.enter()
-            self.update_bar()
+            self.update_output()
 
     def _update_widget(self, text, cached_until):
         """ This is executed via TimeleftTimer instances"""
@@ -228,10 +225,9 @@ class Py3status:
 
     def on_click(self, i3s_output_list, i3s_config, event):
         self._enter_next_state_on_click()
-        self.update_bar()
 
-    def update_bar(self):
-        logging.debug('Executing update_bar.')
+    def update_output(self):
+        logging.debug('Calling update_output new !!!')
         response = {
             'cached_until': CACHE_FOREVER,
             'markup': 'pango',
@@ -253,6 +249,6 @@ if __name__ == "__main__":
         'color_good': '#00FF00'
     }
     while True:
-        print(x.update_bar())
+        print(x.update_output())
         sleep(3)
 # vim: expandtab
