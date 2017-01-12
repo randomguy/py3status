@@ -78,10 +78,6 @@ class TimerState(State):
         self._timers = []
         super().__init__(module)
 
-    @abstractmethod
-    def exit(self):
-        return
-
     @property
     def timers(self):
         return self._timers
