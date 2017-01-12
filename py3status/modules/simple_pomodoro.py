@@ -41,7 +41,7 @@ logging.basicConfig(filename='example.log',
                     datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
-class StoppableTimer(Timer):
+class TimeleftTimer(Timer):
     def __init__(self, interval, *args, **kwargs):
         super().__init__(interval, *args, **kwargs)
         self._target_time = time() + interval
@@ -124,7 +124,7 @@ class StateWorking(TimerState):
         stopped_timers = []
         for timer in self.future_timers:
             timer.cancel()
-            new = StoppableTimer(timer.time_left, timer.function, timer.args)
+            new = TimeleftTimer(timer.time_left, timer.function, timer.args)
             stopped_timers.append(new)
         self.timers = stopped_timers
 
@@ -215,7 +215,7 @@ class Py3status:
             self.update_bar()
 
     def _update_widget(self, text, cached_until):
-        """ This is executed via StoppableTimer instances"""
+        """ This is executed via TimeleftTimer instances"""
         self.full_text = text
         self.cached_until = CACHE_FOREVER
         self.py3.update()
@@ -227,12 +227,12 @@ class Py3status:
         timers = []
         text = FULL_BAR
         for i in range(1, 5):
-            timer = StoppableTimer(i * timer_interval,
-                                   self._update_widget,
-                                   [text.replace('■', '□', i), time() + i*timer_interval])
+            timer = TimeleftTimer(i * timer_interval,
+                                  self._update_widget,
+                                  [text.replace('■', '□', i), time() + i*timer_interval])
             timer.start()
             timers.append(timer)
-        last = StoppableTimer(duration_in_seconds, self._enter_next_state_on_timer)
+        last = TimeleftTimer(duration_in_seconds, self._enter_next_state_on_timer)
         last.start()
         timers.append(last)
         return timers
@@ -246,20 +246,6 @@ class Py3status:
     def on_click(self, i3s_output_list, i3s_config, event):
         self._enter_next_state_on_click()
         self.update_bar()
-        """
-        This method should only be used for ADVANCED and very specific usages.
-
-        Read the 'Handle click events directly from your i3status config'
-        article from the py3status wiki:
-            https://github.com/ultrabug/py3status/wiki/
-
-        This method will be called when a click event occurs on this module's
-        output on the i3bar.
-
-        Example 'event' json object:
-        {'y': 13, 'x': 17, 'button': 1, 'name': 'example', 'instance': 'first'}
-        """
-        pass
 
     def update_bar(self):
         logging.debug('Executing update_bar.')
