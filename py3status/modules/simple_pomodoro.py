@@ -110,9 +110,7 @@ class TimerState(State):
 class StatePauseWorking(State):
     def enter(self):
         self._module.full_text = "<span font='Material Design Icons 12'></span> paused"
-        self._module.cached_until = CACHE_FOREVER
         self._module.update_bar()
-        # TODO
 
 
 class StateWorking(TimerState):
@@ -132,14 +130,12 @@ class StateWorking(TimerState):
 class StateWaitForStart(State):
     def enter(self):
         self._module.full_text = "start <span font='Material Design Icons 12'></span>"
-        self._module.cached_until = CACHE_FOREVER
         self._module.update_bar()
 
 
 class StateWaitForBreak(State):
     def enter(self):
         self._module.full_text = 'start break'
-        self._module.cached_until = CACHE_FOREVER
 
 
 class StateTakingBreak(TimerState):
@@ -171,14 +167,6 @@ class Py3status:
 
         self._state = wait_for_start
         self._state.enter()
-
-    @property
-    def cached_until(self):
-        return self._cached_until
-
-    @cached_until.setter
-    def cached_until(self, new_cached_until):
-        self._cached_until = new_cached_until
 
     @property
     def full_text(self):
@@ -217,7 +205,6 @@ class Py3status:
     def _update_widget(self, text, cached_until):
         """ This is executed via TimeleftTimer instances"""
         self.full_text = text
-        self.cached_until = CACHE_FOREVER
         self.py3.update()
 
     def _init_timers(self, duration_in_seconds):
@@ -250,7 +237,7 @@ class Py3status:
     def update_bar(self):
         logging.debug('Executing update_bar.')
         response = {
-            'cached_until': self.cached_until,
+            'cached_until': CACHE_FOREVER,
             'markup': 'pango',
             'full_text': self.full_text
         }
