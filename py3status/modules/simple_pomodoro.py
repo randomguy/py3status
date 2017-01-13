@@ -24,19 +24,27 @@ Format of status string placeholders:
 @author <Eduard Mai> <eduard.mai@posteo.de>
 @license BSD
 """
-
+from abc import ABCMeta, abstractmethod
+from logging.handlers import RotatingFileHandler
+from os import path
 from threading import Timer
 from time import time
 import logging
-from abc import ABCMeta, abstractmethod
 
-CACHE_FOREVER = -1
-POMODORO_DURATION_SEC = 25 * 60
-BREAK_DURATION_SEC = 5 * 60
+# POMODORO_DURATION_SEC = 25 * 60
+POMODORO_DURATION_SEC = 2 * 5
+BREAK_DURATION_SEC = 5 * 1
 FULL_BAR = "<span font='Material Design Icons 12'>■■■■■</span>"
 
-logging.basicConfig(filename='example.log',
-                    level=logging.DEBUG,
+handler = RotatingFileHandler('.pomodoro.log', maxBytes=80, backupCount=0)
+handler.setFormatter(logging.Formatter(fmt='[%(asctime)s]',
+                                           datefmt='%Y-%m-%d %H:%M:%S'))
+log = logging.getLogger('pomodoro')
+log.setLevel(logging.INFO)
+log.addHandler(handler)
+
+logging.basicConfig(filename=path.join(path.expanduser('~'), 'simple_pomodoro.log'),
+                    level=logging.INFO,
                     format='%(asctime)s|l.%(lineno)3d|%(message)s',
                     datefmt='%m/%d/%Y %I:%M:%S %p')
 
@@ -129,7 +137,11 @@ class StateWaitForStart(State):
 
 class StateWaitForBreak(State):
     def enter(self):
+        # waiting for break means a pomodoro has been finished
+        # write pomodoro completion to ~/.pomodoro.log
+        log.info('ignored')
         self._module.full_text = 'start break'
+        self._module.py3.update(module_name='pomodoro_counter')
 
 
 class StateTakingBreak(TimerState):
@@ -179,7 +191,6 @@ class Py3status:
         self._state = new_state
 
     def _enter_next_state_on_timer(self):
-        logging.debug('SWITCHING STATE VIA TIMER!')
         self._state = self._on_timer_transitions[self._state]
         self._state.enter()
         self.py3.update()
@@ -227,9 +238,8 @@ class Py3status:
         self._enter_next_state_on_click()
 
     def update_output(self):
-        logging.debug('Calling update_output new !!!')
         response = {
-            'cached_until': CACHE_FOREVER,
+            'cached_until': self.py3.CACHE_FOREVER,
             'markup': 'pango',
             'full_text': self.full_text
         }
