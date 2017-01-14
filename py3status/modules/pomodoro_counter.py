@@ -16,6 +16,14 @@ Format of status string placeholders:
 """
 from datetime import datetime
 from os import path
+# import logging
+# logging.basicConfig(filename=path.join(path.expanduser('~'), 'simple_pomodoro.log'),
+#                     level=logging.INFO,
+#                     format='%(asctime)s|l.%(lineno)3d|%(message)s',
+#                     datefmt='%m/%d/%Y %I:%M:%S %p')
+
+# POMODORO_SYMBOL = u"<span font='Material Design Icons 12'></span>"
+POMODORO_SYMBOL = u"<span font='Material Design Icons 12'></span>"
 
 
 class Py3status:
@@ -34,12 +42,10 @@ class Py3status:
         with open(path.join(path.expanduser("~"), '.pomodoro.log'), 'w') as fd:
             fd.writelines(log_lines)
 
-    def on_click(self, i3s_output_list, i3s_config, event):
-        pass
-
     def update_output(self):
         self._parse_and_truncate_log()
         return {
                 'cached_until': self.py3.CACHE_FOREVER,
-                'full_text': str(self._today)
+                'markup': 'pango',
+                'full_text': '{} {}'.format(POMODORO_SYMBOL, self._today)
         }
