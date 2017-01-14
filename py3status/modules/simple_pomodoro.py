@@ -14,7 +14,7 @@
 """
 WIP Pomodoro technique timer for py3status.
 
-Another pomodoro timer with simpler UI
+A pomodoro timer with simple and low distraction UI.
 
 Configuration parameters:
     TODO
@@ -25,7 +25,7 @@ Format of status string placeholders:
 @license BSD
 """
 from abc import ABCMeta, abstractmethod
-from logging.handlers import RotatingFileHandler
+from logging import FileHandler
 from os import path
 from threading import Timer
 from time import time
@@ -34,19 +34,21 @@ import logging
 # POMODORO_DURATION_SEC = 25 * 60
 POMODORO_DURATION_SEC = 2 * 5
 BREAK_DURATION_SEC = 5 * 1
-FULL_BAR = "<span font='Material Design Icons 12'>■■■■■</span>"
+EMPTY_BAR_SEGMENT = ""
+FULL_BAR_SEGMENT = ""
+FULL_BAR = "<span font='Material Design Icons 11'>{}</span>".format(5 * FULL_BAR_SEGMENT)
 
-handler = RotatingFileHandler('.pomodoro.log', maxBytes=80, backupCount=0)
+handler = FileHandler(path.join(path.expanduser('~'), '.pomodoro.log'))
 handler.setFormatter(logging.Formatter(fmt='[%(asctime)s]',
                                            datefmt='%Y-%m-%d %H:%M:%S'))
 log = logging.getLogger('pomodoro')
 log.setLevel(logging.INFO)
 log.addHandler(handler)
 
-logging.basicConfig(filename=path.join(path.expanduser('~'), 'simple_pomodoro.log'),
-                    level=logging.INFO,
-                    format='%(asctime)s|l.%(lineno)3d|%(message)s',
-                    datefmt='%m/%d/%Y %I:%M:%S %p')
+# logging.basicConfig(filename=path.join(path.expanduser('~'), 'simple_pomodoro.log'),
+#                     level=logging.INFO,
+#                     format='%(asctime)s|l.%(lineno)3d|%(message)s',
+#                     datefmt='%m/%d/%Y %I:%M:%S %p')
 
 
 class TimeleftTimer(Timer):
@@ -141,6 +143,7 @@ class StateWaitForBreak(State):
         # write pomodoro completion to ~/.pomodoro.log
         log.info('ignored')
         self._module.full_text = 'start break'
+        self._module.py3.notify_user('Please take a break now.', level='warning')
         self._module.py3.update(module_name='pomodoro_counter')
 
 
@@ -150,9 +153,6 @@ class StateTakingBreak(TimerState):
 
 
 class Py3status:
-    # available configuration parameters
-    cache_timeout = 10
-
     def __init__(self):
         wait_for_start = StateWaitForStart(self)
         working = StateWorking(self)
@@ -216,11 +216,11 @@ class Py3status:
         duration_in_seconds """
         timer_interval = duration_in_seconds / 5
         timers = []
-        text = FULL_BAR
         for i in range(1, 5):
+            widget_text = FULL_BAR.replace(FULL_BAR_SEGMENT, EMPTY_BAR_SEGMENT, i)
             timer = TimeleftTimer(i * timer_interval,
                                   self._update_widget,
-                                  [text.replace('■', '□', i), time() + i*timer_interval])
+                                  [widget_text, time() + i * timer_interval])
             timer.start()
             timers.append(timer)
         last = TimeleftTimer(duration_in_seconds, self._enter_next_state_on_timer)
@@ -244,21 +244,3 @@ class Py3status:
             'full_text': self.full_text
         }
         return response
-
-
-if __name__ == "__main__":
-    """
-    Test this module by calling it directly.
-    This SHOULD work before contributing your module please.
-    """
-    from time import sleep
-    x = Py3status()
-    config = {
-        'color_bad': '#FF0000',
-        'color_degraded': '#FFFF00',
-        'color_good': '#00FF00'
-    }
-    while True:
-        print(x.update_output())
-        sleep(3)
-# vim: expandtab
