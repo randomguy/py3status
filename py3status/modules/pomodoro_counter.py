@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Display pomodoro count. Needs simple_pomodoro.
+Display pomodoro count. Depends on  simple_pomodoro.
 
 A complementary widget for simple_pomodoro. It will parse the contents of
 ~/.pomodoro.log (written by simple_pomodoro) and display the number of
@@ -34,12 +34,12 @@ class Py3status:
             threshold_month = threshold_today.replace(day=1)
             for line in fd:
                 pom_time = datetime.strptime(line.strip(), '[%Y-%m-%d %H:%M:%S]')
-                if pom_time > threshold_month:
-                    self._month += 1
-                if pom_time > threshold_week:
-                    self._week += 1
                 if pom_time > threshold_today:
                     self._today += 1
+                if pom_time > threshold_week:
+                    self._week += 1
+                if pom_time > threshold_month:
+                    self._month += 1
                 else:
                     # older than a month, will be dropped
                     continue
@@ -54,5 +54,6 @@ class Py3status:
         return {
                 'cached_until': self.py3.CACHE_FOREVER,
                 'markup': 'pango',
-                'full_text': '{} {}'.format(POMODORO_SYMBOL, self._today)
+                'full_text': '{} {} {} {}'.format(
+                    POMODORO_SYMBOL, self._today, self._week, self._month)
         }
