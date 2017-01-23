@@ -35,12 +35,14 @@ POMODORO_DURATION_SEC = 2 * 5
 BREAK_DURATION_SEC = 5 * 1
 EMPTY_BAR_SEGMENT = ""
 FULL_BAR_SEGMENT = ""
-FULL_BAR = "<span font='Material Design Icons 11'>{}</span>".format(5 * FULL_BAR_SEGMENT)
+FULL_BAR = "<span font='Material Design Icons 11'>{}</span>".format(
+    5 * FULL_BAR_SEGMENT)
 
 POMODORO_LOG_PATH = path.join(path.expanduser('~'), '.pomodoro.log')
 
 
 class PomodoroLogger():
+
     def __init__(self, log_path):
         self._log_path = log_path
         self._log_file = open(POMODORO_LOG_PATH, 'a')
@@ -49,11 +51,13 @@ class PomodoroLogger():
         self._log_file.close()
 
     def completed_pomodoro(self):
-        self._log_file.write('{}\n'.format(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')))
+        self._log_file.write('{}\n'.format(
+            datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')))
         self._log_file.flush()
 
 
 class TimeleftTimer(Timer):
+
     def __init__(self, interval, *args, **kwargs):
         super().__init__(interval, *args, **kwargs)
         self._target_time = time() + interval
@@ -86,6 +90,7 @@ class State:
 
 
 class TimerState(State):
+
     def __init__(self, module):
         self._timers = []
         super().__init__(module)
@@ -116,11 +121,13 @@ class TimerState(State):
 
 
 class StatePauseWorking(State):
+
     def enter(self):
         self._module.full_text = "<span font='Material Design Icons 12'></span> paused"
 
 
 class StateWorking(TimerState):
+
     def enter(self):
         super().enter(POMODORO_DURATION_SEC)
 
@@ -135,28 +142,31 @@ class StateWorking(TimerState):
 
 
 class StateWaitForStart(State):
+
     def enter(self):
         self._module.full_text = "start <span font='Material Design Icons 12'></span>"
 
 
 class StateWaitForBreak(State):
-    def enter(self):
-        # waiting for break means a pomodoro has been finished
-        # write pomodoro completion to ~/.pomodoro.log
-        #pomodoro_complete.info('')
-        self._module._pomdoro_log.completed_pomodoro()
 
+    def enter(self):
+        # waiting for break means a pomodoro has been finished. Log pomodoro
+        # completion to ~/.pomodoro.log
+        self._module._pomdoro_log.completed_pomodoro()
         self._module.full_text = 'start break'
-        self._module.py3.notify_user('Please take a break now.', level='warning')
+        self._module.py3.notify_user(
+            'Please take a break now.', level='warning')
         self._module.py3.update(module_name='pomodoro_counter')
 
 
 class StateTakingBreak(TimerState):
+
     def enter(self):
         super().enter(BREAK_DURATION_SEC)
 
 
 class Py3status:
+
     def __init__(self):
         self._initial_state()
         self._pomdoro_log = PomodoroLogger(POMODORO_LOG_PATH)
@@ -168,7 +178,6 @@ class Py3status:
         wait_for_break = StateWaitForBreak(self)
         taking_break = StateTakingBreak(self)
 
-        # define state transitions with dict(s)
         self._on_click_transitions = {
             wait_for_start: working,
             working: pause_working,
@@ -225,10 +234,12 @@ class Py3status:
         timer_interval = duration_in_seconds / 5
         timers = []
         for i in range(1, 5):
-            widget_text = FULL_BAR.replace(FULL_BAR_SEGMENT, EMPTY_BAR_SEGMENT, i)
-            timer = TimeleftTimer(i * timer_interval,
-                                  self._update_widget,
-                                  [widget_text])
+            widget_text = FULL_BAR.replace(
+                FULL_BAR_SEGMENT, EMPTY_BAR_SEGMENT, i)
+            timer = TimeleftTimer(
+                        i * timer_interval,
+                        self._update_widget,
+                        [widget_text])
             timer.start()
             timers.append(timer)
         last = TimeleftTimer(duration_in_seconds, self._enter_next_state_on_timer)
