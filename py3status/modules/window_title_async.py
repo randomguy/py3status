@@ -61,6 +61,8 @@ class Py3status:
 
             else:
                 title = w.name
+                if title is None:
+                    title = ''
 
                 if len(title) > self.max_width:
                     title = title[:self.max_width - 1] + "…"
@@ -109,7 +111,7 @@ class Py3status:
 
         conn.main()  # run the event loop
 
-    def window_title(self):
+    def window_title_async(self):
         resp = {
             'cached_until': self.py3.CACHE_FOREVER,
             'full_text': self.title,

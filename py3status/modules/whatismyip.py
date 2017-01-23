@@ -4,7 +4,8 @@ Display your public/external IP address and toggle to online status on click.
 
 Configuration parameters:
     cache_timeout: how often we refresh this module in seconds (default 30)
-    format: the only placeholder available is {ip} (default '{ip}')
+    format: available placeholders are {ip} and {country}
+            (default '{ip}')
     format_offline: what to display when offline (default '■')
     format_online: what to display when online (default '●')
     hide_when_offline: hide the module output when offline (default False)
@@ -14,6 +15,12 @@ Configuration parameters:
     timeout: how long before deciding we're offline (default 5)
     url: change IP check url (must output a plain text IP address)
         (default 'http://ultrabug.fr/py3status/whatismyip')
+    url_geo: IP to check for geo location (must output json)
+        (default 'http://ip-api.com/json')
+
+Format placeholders:
+    {country} display the country
+    {ip} display current ip address
 
 Color options:
     color_bad: Offline
@@ -22,6 +29,7 @@ Color options:
 @author ultrabug
 """
 
+import json
 try:
     # python3
     from urllib.request import urlopen
@@ -42,6 +50,7 @@ class Py3status:
     negative_cache_timeout = 2
     timeout = 5
     url = 'http://ultrabug.fr/py3status/whatismyip'
+    url_geo = 'http://ip-api.com/json'
 
     def on_click(self, event):
         """
@@ -52,20 +61,28 @@ class Py3status:
         else:
             self.mode = 'ip'
 
-    def _get_my_ip(self):
+    def _get_my_ip_and_location(self):
         """
         """
         try:
-            ip = urlopen(self.url, timeout=self.timeout).read()
-            ip = ip.decode('utf-8')
+            if self.py3.format_contains(self.format, 'country'):
+                resp = urlopen(self.url_geo, timeout=self.timeout).read()
+                resp = json.loads(resp)
+                country = resp['country']
+                ip = resp['query']
+            else:
+                country = None
+                ip = urlopen(self.url, timeout=self.timeout).read()
+                ip = ip.decode('utf-8')
         except Exception:
+            country = None
             ip = None
-        return ip
+        return country, ip
 
     def whatismyip(self):
         """
         """
-        ip = self._get_my_ip()
+        country, ip = self._get_my_ip_and_location()
         response = {
             'cached_until': self.py3.time_in(self.negative_cache_timeout)
         }
@@ -75,7 +92,9 @@ class Py3status:
         elif ip is not None:
             response['cached_until'] = self.py3.time_in(self.cache_timeout)
             if self.mode == 'ip':
-                response['full_text'] = self.py3.safe_format(self.format, {'ip': ip})
+                response['full_text'] = self.py3.safe_format(self.format, {
+                    'country': country,
+                    'ip': ip})
             else:
                 response['full_text'] = self.format_online
                 response['color'] = self.py3.COLOR_GOOD
