@@ -25,11 +25,10 @@ Format of status string placeholders:
 @license BSD
 """
 from abc import ABCMeta, abstractmethod
-from logging import FileHandler
+from datetime import datetime
 from os import path
 from threading import Timer
 from time import time
-import logging
 
 # POMODORO_DURATION_SEC = 25 * 60
 POMODORO_DURATION_SEC = 2 * 5
@@ -38,17 +37,20 @@ EMPTY_BAR_SEGMENT = ""
 FULL_BAR_SEGMENT = ""
 FULL_BAR = "<span font='Material Design Icons 11'>{}</span>".format(5 * FULL_BAR_SEGMENT)
 
-handler = FileHandler(path.join(path.expanduser('~'), '.pomodoro.log'))
-handler.setFormatter(logging.Formatter(fmt='[%(asctime)s]',
-                                           datefmt='%Y-%m-%d %H:%M:%S'))
-log = logging.getLogger('pomodoro')
-log.setLevel(logging.INFO)
-log.addHandler(handler)
+POMODORO_LOG_PATH = path.join(path.expanduser('~'), '.pomodoro.log')
 
-# logging.basicConfig(filename=path.join(path.expanduser('~'), 'simple_pomodoro.log'),
-#                     level=logging.INFO,
-#                     format='%(asctime)s|l.%(lineno)3d|%(message)s',
-#                     datefmt='%m/%d/%Y %I:%M:%S %p')
+
+class PomodoroLogger():
+    def __init__(self, log_path):
+        self._log_path = log_path
+        self._log_file = open(POMODORO_LOG_PATH, 'a')
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self._log_file.close()
+
+    def completed_pomodoro(self):
+        self._log_file.write('{}\n'.format(datetime.now().strftime('[%Y-%m-%d %H:%M:%S]')))
+        self._log_file.flush()
 
 
 class TimeleftTimer(Timer):
@@ -141,7 +143,9 @@ class StateWaitForBreak(State):
     def enter(self):
         # waiting for break means a pomodoro has been finished
         # write pomodoro completion to ~/.pomodoro.log
-        log.info('ignored')
+        #pomodoro_complete.info('')
+        self._module._pomdoro_log.completed_pomodoro()
+
         self._module.full_text = 'start break'
         self._module.py3.notify_user('Please take a break now.', level='warning')
         self._module.py3.update(module_name='pomodoro_counter')
@@ -154,6 +158,10 @@ class StateTakingBreak(TimerState):
 
 class Py3status:
     def __init__(self):
+        self._initial_state()
+        self._pomdoro_log = PomodoroLogger(POMODORO_LOG_PATH)
+
+    def _initial_state(self):
         wait_for_start = StateWaitForStart(self)
         working = StateWorking(self)
         pause_working = StatePauseWorking(self)
@@ -206,7 +214,7 @@ class Py3status:
             self._state.enter()
             self.update_output()
 
-    def _update_widget(self, text, cached_until):
+    def _update_widget(self, text):
         """ This is executed via TimeleftTimer instances"""
         self.full_text = text
         self.py3.update()
@@ -220,7 +228,7 @@ class Py3status:
             widget_text = FULL_BAR.replace(FULL_BAR_SEGMENT, EMPTY_BAR_SEGMENT, i)
             timer = TimeleftTimer(i * timer_interval,
                                   self._update_widget,
-                                  [widget_text, time() + i * timer_interval])
+                                  [widget_text])
             timer.start()
             timers.append(timer)
         last = TimeleftTimer(duration_in_seconds, self._enter_next_state_on_timer)
