@@ -1,16 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-# See https://github.com/ultrabug/py3status/wiki/Write-your-own-modules
-#
-# NOTE: py3status will NOT execute:
-#     - methods starting with '_'
-#     - methods decorated by @property and @staticmethod
-#
-# NOTE: reserved method names:
-#     - 'kill' method for py3status exit notification
-#     - 'on_click' method for click events from i3bar (read below please)
-#
 """
 WIP Pomodoro technique timer for py3status.
 
@@ -30,9 +19,8 @@ from os import path
 from threading import Timer
 from time import time
 
-# POMODORO_DURATION_SEC = 25 * 60
-POMODORO_DURATION_SEC = 2 * 5
-BREAK_DURATION_SEC = 5 * 1
+POMODORO_DURATION_SEC = 25 * 60
+BREAK_DURATION_SEC = 5 * 60
 EMPTY_BAR_SEGMENT = ""
 FULL_BAR_SEGMENT = ""
 FULL_BAR = "<span font='Material Design Icons 11'>{}</span>".format(
@@ -254,6 +242,7 @@ class Py3status:
         pass
 
     def on_click(self, i3s_output_list, i3s_config, event):
+        # TODO: reset widget to waiting for work start on middle click
         self._enter_next_state_on_click()
 
     def update_output(self):
