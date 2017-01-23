@@ -32,25 +32,13 @@ DBUS_LEVELS = {'error': 'critical', 'warning': 'normal', 'info': 'low', }
 CONFIG_SPECIAL_SECTIONS = [
     '.group_extras',
     '.module_groups',
+    'custom'
     'general',
     'i3s_modules',
     'on_click',
     'order',
     'py3_modules',
-    'py3status',
 ]
-
-
-class NoneSetting:
-    """
-    This class represents no setting in the config.
-    """
-    # this attribute is used to identify that this is a none setting
-    none_setting = True
-
-    def __repr__(self):
-        # this is for output via module_test
-        return 'None'
 
 
 class Py3statusWrapper():
@@ -67,7 +55,6 @@ class Py3statusWrapper():
         self.last_refresh_ts = time.time()
         self.lock = Event()
         self.modules = {}
-        self.none_setting = NoneSetting()
         self.notified_messages = set()
         self.output_modules = {}
         self.py3_modules = []
@@ -325,14 +312,14 @@ class Py3statusWrapper():
 
         # read i3status.conf
         config_path = self.config['i3status_config_path']
-        self.config['py3_config'] = process_config(config_path, self)
+        config = process_config(config_path, self)
 
         # setup i3status thread
-        self.i3status_thread = I3status(self)
+        self.i3status_thread = I3status(self, config)
 
         # If standalone or no i3status modules then use the mock i3status
         # else start i3status thread.
-        i3s_modules = self.config['py3_config']['i3s_modules']
+        i3s_modules = self.i3status_thread.config['i3s_modules']
         if self.config['standalone'] or not i3s_modules:
             self.i3status_thread.mock()
             i3s_mode = 'mocked'
@@ -351,7 +338,7 @@ class Py3statusWrapper():
                 time.sleep(0.1)
         if self.config['debug']:
             self.log('i3status thread {} with config {}'.format(
-                i3s_mode, self.config['py3_config']))
+                i3s_mode, self.i3status_thread.config))
 
         # setup input events thread
         self.events_thread = Events(self)
@@ -365,7 +352,7 @@ class Py3statusWrapper():
             sys.stderr = open('/dev/null', 'w')
 
         # get the list of py3status configured modules
-        self.py3_modules = self.config['py3_config']['py3_modules']
+        self.py3_modules = self.i3status_thread.config['py3_modules']
 
         # get a dict of all user provided modules
         user_modules = self.get_user_configured_modules()
@@ -422,8 +409,8 @@ class Py3statusWrapper():
                 cmd = ['notify-send', '-u', DBUS_LEVELS.get(level, 'normal'),
                        '-t', '10000', 'py3status', msg]
             else:
-                py3_config = self.config['py3_config']
-                nagbar_font = py3_config.get('py3status').get('nagbar_font')
+                config = self.i3status_thread.config
+                nagbar_font = config.get('custom').get('nagbar_font')
                 if nagbar_font:
                     cmd = ['i3-nagbar', '-f', nagbar_font, '-m', msg, '-t', level]
                 else:
@@ -493,21 +480,6 @@ class Py3statusWrapper():
         """
         raise KeyboardInterrupt()
 
-    def purge_module(self, module_name):
-        """
-        A module has been removed e.g. a module that had an error.
-        We need to find any containers and remove the module from them.
-        """
-        containers = self.config['py3_config']['.module_groups']
-        containers_to_update = set()
-        if module_name in containers:
-            containers_to_update.update(set(containers[module_name]))
-        for container in containers_to_update:
-            try:
-                self.modules[container].module_class.items.remove(module_name)
-            except ValueError:
-                pass
-
     def notify_update(self, update, urgent=False):
         """
         Name or list of names of modules that have updated.
@@ -522,7 +494,7 @@ class Py3statusWrapper():
             return
 
         # find containers that use the modules that updated
-        containers = self.config['py3_config']['.module_groups']
+        containers = self.i3status_thread.config['.module_groups']
         containers_to_update = set()
         for item in update:
             if item in containers:
@@ -648,7 +620,7 @@ class Py3statusWrapper():
         Setup our output modules to allow easy updating of py3modules and
         i3status modules allows the same module to be used multiple times.
         """
-        py3_config = self.config['py3_config']
+        config = self.i3status_thread.config
         i3modules = self.i3status_thread.i3modules
         output_modules = self.output_modules
         # position in the bar of the modules
@@ -681,25 +653,20 @@ class Py3statusWrapper():
         then walk up through any containing group and then try the general
         section of the config.
         """
-
-        py3_config = self.config['py3_config']
-        # A user can set a param to None in the config to prevent a param
-        # being used.  This is important when modules do something like
-        #
-        # color = self.py3.COLOR_MUTED or self.py3.COLOR_BAD
-        param = py3_config[name].get(attribute, self.none_setting)
-        if hasattr(param, 'none_setting') and name in py3_config['.module_groups']:
-            for module in py3_config['.module_groups'][name]:
-                if attribute in py3_config.get(module, {}):
-                    param = py3_config[module].get(attribute)
+        config = self.i3status_thread.config
+        color = config[name].get(attribute, 'missing')
+        if color == 'missing' and name in config['.module_groups']:
+            for module in config['.module_groups'][name]:
+                if attribute in config.get(module, {}):
+                    color = config[module].get(attribute)
                     break
-        if hasattr(param, 'none_setting'):
-            # check py3status config section
-            param = py3_config['py3status'].get(attribute, self.none_setting)
-        if hasattr(param, 'none_setting'):
-            # check py3status general section
-            param = py3_config['general'].get(attribute, self.none_setting)
-        return param
+        if color == 'missing':
+            # A user can set a color to None in the config to prevent a color
+            # being used.  This is important when modules do something like
+
+            # color = self.py3.COLOR_MUTED or self.py3.COLOR_BAD
+            color = config['general'].get(attribute, False)
+        return color
 
     def create_mappings(self, config):
         """
@@ -711,8 +678,6 @@ class Py3statusWrapper():
             if name in CONFIG_SPECIAL_SECTIONS:
                 continue
             color = self.get_config_attribute(name, 'color')
-            if hasattr(color, 'none_setting'):
-                color = None
             mappings[name] = color
         # Store mappings for later use.
         self.mappings_color = mappings
@@ -770,10 +735,10 @@ class Py3statusWrapper():
 
         # initialize usage variables
         i3status_thread = self.i3status_thread
-        py3_config = self.config['py3_config']
+        config = i3status_thread.config
 
         # prepare the color mappings
-        self.create_mappings(py3_config)
+        self.create_mappings(config)
 
         # self.output_modules needs to have been created before modules are
         # started.  This is so that modules can do things like register their
@@ -794,7 +759,7 @@ class Py3statusWrapper():
 
         # this will be our output set to the correct length for the number of
         # items in the bar
-        output = [None] * len(py3_config['order'])
+        output = [None] * len(config['order'])
 
         interval = self.config['interval']
         last_sec = 0
