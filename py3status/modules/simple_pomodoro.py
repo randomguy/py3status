@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-WIP Pomodoro technique timer for py3status.
+Pomodoro technique timer for py3status.
 
 A pomodoro timer with simple and low distraction UI.
 
