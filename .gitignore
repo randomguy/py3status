@@ -1,4 +1,3 @@
-TEST_*
 *.pyc
 build
 dist
