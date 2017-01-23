@@ -8,9 +8,13 @@ A complementary widget for simple_pomodoro. It will parse the contents of
 pomodoros completed today.
 
 Configuration parameters:
-    TODO
+    {output_format} use the status string placeholders below
+
 Format of status string placeholders:
-    {output} output of this module
+    {symbol} use a an icon font and pango markup for best results
+    {today} pomodoros logged since today 6AM
+    {week} same since monday 6AM
+    {month} same since this months 1st 6AM
 
 @author <randomguy>
 @license BSD
@@ -18,11 +22,11 @@ Format of status string placeholders:
 from datetime import datetime, timedelta
 from os import path
 
-# POMODORO_SYMBOL = u"<span font='Material Design Icons 12'></span>"
-POMODORO_SYMBOL = u"<span font='Material Design Icons 12'></span>"
-
 
 class Py3status:
+    output_format = u'{today} w:{week}'
+    symbol = u"<span font='Material Design Icons 12'></span>"
+
     def _parse_and_truncate_log(self):
         self.today = 0
         self.week = 0
@@ -54,6 +58,4 @@ class Py3status:
         return {
                 'cached_until': self.py3.CACHE_FOREVER,
                 'markup': 'pango',
-                'full_text': '{} {} {} {}'.format(
-                    POMODORO_SYMBOL, self._today, self._week, self._month)
-        }
+                'full_text': self.output_format.format(**self.__dict__)}
