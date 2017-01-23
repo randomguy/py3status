@@ -212,13 +212,12 @@ class Py3status:
             self.update_output()
 
     def _update_widget(self, text):
-        """ This is executed via TimeleftTimer instances"""
+        """ This is executed via TimeleftTimer instances """
         self.full_text = text
         self.py3.update()
 
     def _init_timers(self, duration_in_seconds):
-        """ This method will create 5 timers each firing after a fifth of
-        duration_in_seconds """
+        """ Create 5 timers each firing after a fifth of duration_in_seconds """
         timer_interval = duration_in_seconds / 5
         timers = []
         for i in range(1, 5):
