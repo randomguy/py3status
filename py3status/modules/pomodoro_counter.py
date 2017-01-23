@@ -24,9 +24,9 @@ POMODORO_SYMBOL = u"<span font='Material Design Icons 12'></span>"
 
 class Py3status:
     def _parse_and_truncate_log(self):
-        self._today = 0
-        self._week = 0
-        self._month = 0
+        self.today = 0
+        self.week = 0
+        self.month = 0
         log_lines = []
         with open(path.join(path.expanduser("~"), '.pomodoro.log'), 'r') as fd:
             threshold_today = datetime.today().replace(hour=6, minute=0, second=0)
@@ -35,11 +35,11 @@ class Py3status:
             for line in fd:
                 pom_time = datetime.strptime(line.strip(), '[%Y-%m-%d %H:%M:%S]')
                 if pom_time > threshold_today:
-                    self._today += 1
+                    self.today += 1
                 if pom_time > threshold_week:
-                    self._week += 1
+                    self.week += 1
                 if pom_time > threshold_month:
-                    self._month += 1
+                    self.month += 1
                 else:
                     # older than a month, will be dropped
                     continue
