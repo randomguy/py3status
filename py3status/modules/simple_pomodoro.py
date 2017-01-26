@@ -6,6 +6,9 @@ Pomodoro technique timer for py3status.
 A pomodoro timer with simple and low distraction UI. It uses i3-nagbar for noti-
 fications.
 
+Mouse button 1 toggles next phase.
+Mouse button 2 resets the timer to wait for the begin of a pomodoro.
+
 Configuration parameters:
     {break_duration_minutes} Sets the timespan for the break after a pomodoro,
          5min default.
@@ -26,8 +29,8 @@ simple_pomodoro {
     empty_bar_segment = ''
     full_bar_segment = ''
     # more agressive timings
-    work_duration_sec = 30
-    break_duration_sec = 3
+    work_duration_minutes = 30
+    break_duration_minutes = 3
 }
 
 @author <Eduard Mai> <eduard.mai@posteo.de>
@@ -110,6 +113,10 @@ class TimerState(State):
             if timer.is_active:
                 yield timer
 
+    def cancel_future_timers(self):
+        for timer in self.future_timers:
+            timer.cancel()
+
     def enter(self, duration_minutes):
         if not self.timers or not any(self.future_timers):
             self.timers = self._module._init_timers(duration_minutes)
@@ -130,7 +137,7 @@ class StatePauseWorking(State):
 class StateWorking(TimerState):
 
     def enter(self):
-        super().enter(self._module.work_duration_sec)
+        super().enter(self._module.work_duration_minutes)
 
     def exit(self):
         self._old_text = self._module.full_text
@@ -163,7 +170,7 @@ class StateWaitForBreak(State):
 class StateTakingBreak(TimerState):
 
     def enter(self):
-        super().enter(self._module.break_duration_sec)
+        super().enter(self._module.break_duration_minutes)
 
 
 class Py3status:
@@ -259,7 +266,15 @@ class Py3status:
 
     def on_click(self, i3s_output_list, i3s_config, event):
         # TODO: reset widget to waiting for work start on middle click
-        self._enter_next_state_on_click()
+        if event['button'] == 1:
+            self._enter_next_state_on_click()
+        elif event['button'] == 2:
+            # reset state machine
+            self.state.cancel_future_timers()
+            #for timer in self.state.future_timers:
+            #    timer.cancel()
+            self._initial_state()
+            #self._initial_state()
 
     def update_output(self):
         response = {
