@@ -271,10 +271,7 @@ class Py3status:
         elif event['button'] == 2:
             # reset state machine
             self.state.cancel_future_timers()
-            #for timer in self.state.future_timers:
-            #    timer.cancel()
             self._initial_state()
-            #self._initial_state()
 
     def update_output(self):
         response = {
