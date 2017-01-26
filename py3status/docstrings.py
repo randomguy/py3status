@@ -39,6 +39,7 @@ def parse_readme():
 
 
 def core_module_docstrings(include_core=True, include_user=False, config=None):
+    # TODO: This needs to change to include modules in directories
     '''
     Get docstrings for all core modules and user ones if requested
     returns a dict of {<module_name>: <docstring>}
