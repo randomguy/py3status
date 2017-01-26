@@ -3,12 +3,32 @@
 """
 Pomodoro technique timer for py3status.
 
-A pomodoro timer with simple and low distraction UI.
+A pomodoro timer with simple and low distraction UI. It uses i3-nagbar for noti-
+fications.
 
 Configuration parameters:
-    TODO
+    {break_duration_minutes} Sets the timespan for the break after a pomodoro,
+         5min default.
+    {work_duration_minutes} Sets the timespan for a pomodoro, 25min recommended.
+    {empty_bar_segment} A single char displayed for an empty segment during
+        work and brak phases.
+    {full_bar_segment} Same as above for the full segment of the bar.
+
 Format of status string placeholders:
-    {output} output of this module
+    None as of now.
+
+Color options:
+    None as of now.
+
+config example:
+simple_pomodoro {
+    # From Material Design Icons font
+    empty_bar_segment = ''
+    full_bar_segment = ''
+    # more agressive timings
+    work_duration_sec = 30
+    break_duration_sec = 3
+}
 
 @author <Eduard Mai> <eduard.mai@posteo.de>
 @license BSD
@@ -18,9 +38,6 @@ from datetime import datetime
 from os import path
 from threading import Timer
 from time import time
-
-POMODORO_DURATION_SEC = 25 * 60
-BREAK_DURATION_SEC = 5 * 60
 
 POMODORO_LOG_PATH = path.join(path.expanduser('~'), '.pomodoro.log')
 
@@ -93,9 +110,9 @@ class TimerState(State):
             if timer.is_active:
                 yield timer
 
-    def enter(self, duration):
+    def enter(self, duration_minutes):
         if not self.timers or not any(self.future_timers):
-            self.timers = self._module._init_timers(duration)
+            self.timers = self._module._init_timers(duration_minutes)
             self._module.full_text = 5 * self._module.full_bar_segment
         else:
             self._module.full_text = self._old_text
@@ -113,7 +130,7 @@ class StatePauseWorking(State):
 class StateWorking(TimerState):
 
     def enter(self):
-        super().enter(POMODORO_DURATION_SEC)
+        super().enter(self._module.work_duration_sec)
 
     def exit(self):
         self._old_text = self._module.full_text
@@ -146,12 +163,14 @@ class StateWaitForBreak(State):
 class StateTakingBreak(TimerState):
 
     def enter(self):
-        super().enter(BREAK_DURATION_SEC)
+        super().enter(self._module.break_duration_sec)
 
 
 class Py3status:
     empty_bar_segment = ""
     full_bar_segment = ""
+    break_duration_minutes = 5
+    work_duration_minutes = 25
 
     def __init__(self):
         self._initial_state()
@@ -214,20 +233,20 @@ class Py3status:
         self.full_text = text
         self.py3.update()
 
-    def _init_timers(self, duration_in_seconds):
-        """ Create 5 timers each firing after a fifth of duration_in_seconds """
-        timer_interval = duration_in_seconds / 5
+    def _init_timers(self, duration_minutes):
+        """ Create 5 timers each firing after a fifth of duration_minutes """
+        timer_interval = duration_minutes / 5
         timers = []
         for i in range(1, 5):
             widget_text = (5 * self.full_bar_segment).replace(
                 self.full_bar_segment, self.empty_bar_segment, i)
             timer = TimeleftTimer(
-                        i * timer_interval,
+                        i * timer_interval * 60,
                         self._update_widget,
                         [widget_text])
             timer.start()
             timers.append(timer)
-        last = TimeleftTimer(duration_in_seconds, self._enter_next_state_on_timer)
+        last = TimeleftTimer(duration_minutes * 60, self._enter_next_state_on_timer)
         last.start()
         timers.append(last)
         return timers
