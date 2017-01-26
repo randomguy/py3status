@@ -21,10 +21,6 @@ from time import time
 
 POMODORO_DURATION_SEC = 25 * 60
 BREAK_DURATION_SEC = 5 * 60
-EMPTY_BAR_SEGMENT = ""
-FULL_BAR_SEGMENT = ""
-FULL_BAR = "<span font='Material Design Icons 11'>{}</span>".format(
-    5 * FULL_BAR_SEGMENT)
 
 POMODORO_LOG_PATH = path.join(path.expanduser('~'), '.pomodoro.log')
 
@@ -100,7 +96,7 @@ class TimerState(State):
     def enter(self, duration):
         if not self.timers or not any(self.future_timers):
             self.timers = self._module._init_timers(duration)
-            self._module.full_text = FULL_BAR
+            self._module.full_text = 5 * self._module.full_bar_segment
         else:
             self._module.full_text = self._old_text
             for timer in self.future_timers:
@@ -154,6 +150,8 @@ class StateTakingBreak(TimerState):
 
 
 class Py3status:
+    empty_bar_segment = ""
+    full_bar_segment = ""
 
     def __init__(self):
         self._initial_state()
@@ -221,8 +219,8 @@ class Py3status:
         timer_interval = duration_in_seconds / 5
         timers = []
         for i in range(1, 5):
-            widget_text = FULL_BAR.replace(
-                FULL_BAR_SEGMENT, EMPTY_BAR_SEGMENT, i)
+            widget_text = (5 * self.full_bar_segment).replace(
+                self.full_bar_segment, self.empty_bar_segment, i)
             timer = TimeleftTimer(
                         i * timer_interval,
                         self._update_widget,
