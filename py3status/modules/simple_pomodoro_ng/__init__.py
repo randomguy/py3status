@@ -38,7 +38,8 @@ simple_pomodoro {
 """
 from os import path
 from .utils import PomodoroLogger, TimeleftTimer
-from .states import StateWaitForStart, StateWorking, StatePauseWorking, StateWaitForBreak, StateTakingBreak
+from .states import StateWaitForStart, StateWorking, StatePauseWorking
+from .states import StateWaitForBreak, StateTakingBreak, TimerState
 
 POMODORO_LOG_PATH = path.join(path.expanduser('~'), '.pomodoro.log')
 
@@ -135,12 +136,12 @@ class Py3status:
         pass
 
     def on_click(self, i3s_output_list, i3s_config, event):
-        # TODO: reset widget to waiting for work start on middle click
         if event['button'] == 1:
             self._enter_next_state_on_click()
         elif event['button'] == 2:
             # reset state machine
-            self.state.cancel_future_timers()
+            if isinstance(self.state, TimerState):
+                self.state.cancel_future_timers()
             self._initial_state()
 
     def update_output(self):
