@@ -174,8 +174,8 @@ class StateTakingBreak(TimerState):
 
 
 class Py3status:
-    empty_bar_segment = ""
-    full_bar_segment = ""
+    empty_bar_segment = "○"
+    full_bar_segment = "●"
     break_duration_minutes = 5
     work_duration_minutes = 25
 
