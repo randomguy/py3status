@@ -129,12 +129,6 @@ class Py3status:
         timers.append(last)
         return timers
 
-    def kill(self, i3s_output_list, i3s_config):
-        """
-        This method will be called upon py3status exit.
-        """
-        pass
-
     def on_click(self, i3s_output_list, i3s_config, event):
         if event['button'] == 1:
             self._enter_next_state_on_click()
