@@ -164,7 +164,7 @@ class StateWaitForBreak(State):
         self._module.full_text = 'start break'
         self._module.py3.notify_user(
             'Please take a break now.', level='warning')
-        self._module.py3.update()
+        self._module.py3.update(module_name='pomodoro_counter')
 
 
 class StateTakingBreak(TimerState):
