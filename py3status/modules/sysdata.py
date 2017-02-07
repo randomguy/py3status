@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Display system RAM and CPU utilization.
+Display system RAM, SWAP and CPU utilization.
 
 Configuration parameters:
     cache_timeout: how often we refresh this module in seconds (default 10)
@@ -291,9 +291,11 @@ class Py3status:
         # get CPU usage info
         if self.py3.format_contains(self.format, 'cpu_usage'):
             cpu_total, cpu_idle = self.data.cpu()
-            cpu_usage = (1 - (
-                float(cpu_idle - self.cpu_idle) / float(cpu_total - self.cpu_total)
-            )) * 100
+            cpu_usage = 0
+            if cpu_total != self.cpu_total:
+                cpu_usage = (1 - (
+                    float(cpu_idle - self.cpu_idle) / float(cpu_total - self.cpu_total)
+                )) * 100
             self.values['cpu_usage'] = cpu_usage
             self.cpu_total = cpu_total
             self.cpu_idle = cpu_idle
