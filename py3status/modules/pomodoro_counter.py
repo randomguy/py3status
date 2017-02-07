@@ -32,22 +32,25 @@ class Py3status:
         self.week = 0
         self.month = 0
         log_lines = []
-        with open(path.join(path.expanduser("~"), '.pomodoro.log'), 'r') as fd:
-            threshold_today = datetime.today().replace(hour=6, minute=0, second=0)
-            threshold_week = threshold_today - timedelta(days=datetime.today().isoweekday() % 7)
-            threshold_month = threshold_today.replace(day=1)
-            for line in fd:
-                pom_time = datetime.strptime(line.strip(), '[%Y-%m-%d %H:%M:%S]')
-                if pom_time > threshold_today:
-                    self.today += 1
-                if pom_time > threshold_week:
-                    self.week += 1
-                if pom_time > threshold_month:
-                    self.month += 1
-                else:
-                    # older than a month, will be dropped
-                    continue
-                log_lines.append(line)
+        try:
+            with open(path.join(path.expanduser("~"), '.pomodoro.log'), 'r') as fd:
+                threshold_today = datetime.today().replace(hour=6, minute=0, second=0)
+                threshold_week = threshold_today - timedelta(days=datetime.today().isoweekday() % 7)
+                threshold_month = threshold_today.replace(day=1)
+                for line in fd:
+                    pom_time = datetime.strptime(line.strip(), '[%Y-%m-%d %H:%M:%S]')
+                    if pom_time > threshold_today:
+                        self.today += 1
+                    if pom_time > threshold_week:
+                        self.week += 1
+                    if pom_time > threshold_month:
+                        self.month += 1
+                    else:
+                        # older than a month, will be dropped
+                        continue
+                    log_lines.append(line)
+        except FileNotFoundError:
+            pass
         # Only write back lines with times over threshold. This will truncate
         # the log so it won't grow infinitely
         with open(path.join(path.expanduser("~"), '.pomodoro.log'), 'w') as fd:
