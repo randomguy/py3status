@@ -84,6 +84,10 @@ class State:
     def __init__(self, module):
         self._module = module
 
+    @property
+    def py3(self):
+        return self._module.py3
+
     @abstractmethod
     def enter(self):
         return
@@ -125,7 +129,7 @@ class TimerState(State):
             self._module.full_text = self._old_text
             for timer in self.future_timers:
                 timer.start()
-        self._module.py3.update()
+        self.py3.update()
 
 
 class StatePauseWorking(State):
@@ -164,13 +168,18 @@ class StateWaitForBreak(State):
         self._module.full_text = 'start break'
         self._module.py3.notify_user(
             'Please take a break now.', level='warning')
-        self._module.py3.update(module_name='pomodoro_counter')
+        self.py3.update(module_name='pomodoro_counter')
 
 
 class StateTakingBreak(TimerState):
 
     def enter(self):
         super().enter(self._module.break_duration_minutes)
+
+    def exit(self):
+        # Exiting break means we can notify to start work
+        self.py3.notify_user(
+            'Please start to work now.', level='warning')
 
 
 class Py3status:
@@ -220,6 +229,7 @@ class Py3status:
         self._state = new_state
 
     def _enter_next_state_on_timer(self):
+        self._state.exit()
         self._state = self._on_timer_transitions[self._state]
         self._state.enter()
         self.py3.update()
@@ -257,12 +267,6 @@ class Py3status:
         last.start()
         timers.append(last)
         return timers
-
-    def kill(self, i3s_output_list, i3s_config):
-        """
-        This method will be called upon py3status exit.
-        """
-        pass
 
     def on_click(self, i3s_output_list, i3s_config, event):
         # TODO: reset widget to waiting for work start on middle click
