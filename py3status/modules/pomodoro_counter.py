@@ -35,7 +35,8 @@ class Py3status:
         try:
             with open(path.join(path.expanduser("~"), '.pomodoro.log'), 'r') as fd:
                 threshold_today = datetime.today().replace(hour=6, minute=0, second=0)
-                threshold_week = threshold_today - timedelta(days=datetime.today().isoweekday() % 7)
+                threshold_week = threshold_today - timedelta(
+                        days=datetime.today().isoweekday() % 7)
                 threshold_month = threshold_today.replace(day=1)
                 for line in fd:
                     pom_time = datetime.strptime(line.strip(), '[%Y-%m-%d %H:%M:%S]')
