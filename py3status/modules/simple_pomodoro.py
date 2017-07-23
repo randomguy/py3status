@@ -274,7 +274,8 @@ class Py3status:
             self._enter_next_state_on_click()
         elif event['button'] == 2:
             # reset state machine
-            self.state.cancel_future_timers()
+            if isinstance(self.state, TimerState):
+                self.state.cancel_future_timers()
             self._initial_state()
 
     def update_output(self):
