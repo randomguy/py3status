@@ -8,7 +8,7 @@ Button 3 resets timer.
 
 Configuration parameters:
     display_bar: display time in bars when True, otherwise in seconds
-         (default False)
+        (default False)
     format: define custom display format. See placeholders below (default '{ss}')
     format_separator: separator between minutes:seconds (default ':')
     max_breaks: maximum number of breaks (default 4)
@@ -18,7 +18,7 @@ Configuration parameters:
     sound_pomodoro_end: pomodoro end sound (file path) (requires pyglet
         or pygame) (default None)
     sound_pomodoro_start: pomodoro start sound (file path) (requires pyglet
-        od pygame) (default None)
+        or pygame) (default None)
     timer_break: normal break time (seconds) (default 300)
     timer_long_break: long break time (seconds) (default 900)
     timer_pomodoro: pomodoro time (seconds) (default 1500)

@@ -52,7 +52,6 @@ Format placeholders:
     {timezone_unclear} full timezone name eg `America/Argentina/Buenos_Aires`
         but is empty if only one timezone is provided
 
-
 Requires:
     pytz: python library
     tzlocal: python library
@@ -265,10 +264,14 @@ class Py3status:
                         timezone=timezone,
                         timezone_unclear=timezone_unclear,
                     ))
-                if self.py3.is_python_2():
-                    format_time = t.strftime(format_time.encode('utf-8'))
+                if self.py3.is_composite(format_time):
+                    for item in format_time:
+                        item['full_text'] = t.strftime(item['full_text'])
                 else:
-                    format_time = t.strftime(format_time)
+                    if self.py3.is_python_2():
+                        format_time = t.strftime(format_time.encode('utf-8'))
+                    else:
+                        format_time = t.strftime(format_time)
                 times[name] = format_time
 
         # work out when we need to update

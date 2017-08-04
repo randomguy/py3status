@@ -3,15 +3,17 @@
 Display public IP address and online status.
 
 Configuration parameters:
+    button_refresh: mouse button to refresh this module (default 2)
+    button_toggle: mouse button to toggle between states (default 1)
     cache_timeout: how often we refresh this module in seconds (default 30)
     expected: define expected values for format placeholders,
-              and use `color_degraded` to show the output of this module
-              if any of them does not match the actual value.
-              This should be a dict eg {'country': 'France'}
-              (default None)
+        and use `color_degraded` to show the output of this module
+        if any of them does not match the actual value.
+        This should be a dict eg {'country': 'France'}
+        (default None)
     format: available placeholders are {ip} and {country},
-            as well as any other key in JSON fetched from `url_geo`
-            (default '{ip}')
+        as well as any other key in JSON fetched from `url_geo`
+        (default '{ip}')
     hide_when_offline: hide the module output when offline (default False)
     icon_off: what to display when offline (default '■')
     icon_on: what to display when online (default '●')
@@ -53,6 +55,8 @@ class Py3status:
     """
     """
     # available configuration parameters
+    button_refresh = 2
+    button_toggle = 1
     cache_timeout = 30
     expected = None
     format = '{ip}'
@@ -101,10 +105,15 @@ class Py3status:
         """
         Toggle between display modes 'ip' and 'status'
         """
-        if self.mode == 'ip':
-            self.mode = 'status'
-        else:
-            self.mode = 'ip'
+        button = event['button']
+        if button == self.button_toggle:
+            if self.mode == 'ip':
+                self.mode = 'status'
+            else:
+                self.mode = 'ip'
+        elif button != self.button_refresh:
+            # prevent refresh
+            self.py3.prevent_refresh()
 
     def _get_my_ip_info(self):
         """
@@ -131,12 +140,12 @@ class Py3status:
             info['icon'] = self.icon_on
             response['cached_until'] = self.py3.time_in(self.cache_timeout)
             response['color'] = self.py3.COLOR_GOOD
+            for key, val in self.expected.items():
+                if val != info.get(key):
+                    response['color'] = self.py3.COLOR_DEGRADED
+                    break
             if self.mode == 'ip':
                 response['full_text'] = self.py3.safe_format(self.format, info)
-                for key, val in self.expected.items():
-                    if val != info.get(key):
-                        response['color'] = self.py3.COLOR_DEGRADED
-                        break
             else:
                 response['full_text'] = self.icon_on
         else:

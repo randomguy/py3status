@@ -359,12 +359,17 @@ class Py3status:
 
                 time_remaining_seconds = self._hms_to_seconds(active_battery[
                     "time_remaining"])
-                rate_second_per_mah = time_remaining_seconds / (
-                    active_battery["capacity"] *
-                    (active_battery["percent_charged"] / 100))
-                time_remaining_seconds += inactive_battery["capacity"] * \
-                    inactive_battery["percent_charged"] / 100 * \
-                    rate_second_per_mah
+                try:
+                    rate_second_per_mah = time_remaining_seconds / (
+                        active_battery["capacity"] *
+                        (active_battery["percent_charged"] / 100))
+                    time_remaining_seconds += inactive_battery["capacity"] * \
+                        inactive_battery["percent_charged"] / 100 * \
+                        rate_second_per_mah
+                except ZeroDivisionError:
+                    # Either active or inactive battery has 0% charge
+                    time_remaining_seconds = 0
+                    rate_second_per_mah = 0
 
                 self.time_remaining = self._seconds_to_hms(
                     time_remaining_seconds)
@@ -391,8 +396,9 @@ class Py3status:
         if self.charging:
             self.icon = self.charging_character
         else:
-            self.icon = self.blocks[int(math.ceil(self.percent_charged / 100 *
-                                                  (len(self.blocks) - 1)))]
+            self.icon = self.blocks[min(len(self.blocks) - 1,
+                                        int(math.ceil(self.percent_charged / 100 *
+                                                      (len(self.blocks) - 1))))]
 
     def _update_full_text(self):
         self.full_text = self.py3.safe_format(
